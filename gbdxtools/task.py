@@ -23,7 +23,7 @@ class Task:
             
         '''
 
-        self.input_data = {}
+        self.input_data = []
         self.name = task_type + '_' + str(uuid.uuid4())
         self.id = None
 
@@ -48,8 +48,10 @@ class Task:
         input_port_names = [p['name'] for p in self.input_ports]
         for input_port in kwargs.keys():
             if input_port in input_port_names:
-                self.input_data[input_port] = kwargs[input_port]
-                # set the value/source
+                self.input_data.append( { 
+                                            'name': input_port,
+                                            'value': kwargs[input_port]
+                                        })
             else:
                 raise Exception('Invalid input port %s.  Valid input ports for task %s are: %s' % (input_port, self.type, input_port_names))
 
@@ -78,10 +80,14 @@ class Task:
                         }
                     ],
                     "inputs": [],
-                    "taskType": self.type
+                    "taskType": self.type,
+                    "containerDescriptors": [{"properties": {"domain": self.domain}}]
                 }
 
-        for input_port_name, input_port_value in self.input_data.iteritems():
+        #for input_port_name, input_port_value in self.input_data.iteritems():
+        for input_port in self.input_data:
+            input_port_name = input_port.keys()[0]
+            input_port_value = input_port[input_port_name]
             if input_port_value == False:
                 input_port_value = 'false'
 
