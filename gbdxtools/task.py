@@ -84,7 +84,6 @@ class Task:
                     "containerDescriptors": [{"properties": {"domain": self.domain}}]
                 }
 
-        #for input_port_name, input_port_value in self.input_data.iteritems():
         for input_port in self.input_data:
             input_port_name = input_port.keys()[0]
             input_port_value = input_port[input_port_name]
@@ -103,19 +102,20 @@ class Task:
                                     "value": input_port_value
                                 })
 
+        d['outputs'] = self.output_ports
 
-        return json.dumps(d)
+        return d
 
 
 class Workflow:
     def __init__(self, interface, tasks, **kwargs):
         self.interface = interface
-        self.name = kwargs.get('name', uuid.uuid4())
+        self.name = kwargs.get('name', str(uuid.uuid4()) )
 
         self.definition = self.workflow_skeleton()
 
         for task in tasks:
-            task.generate_task_workflow_json()
+            self.definition['tasks'].append( task.generate_task_workflow_json() )
 
         
 
