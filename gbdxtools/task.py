@@ -41,7 +41,7 @@ class Task:
         if port_name not in output_port_names:
             raise Exception('Invalid output port %s.  Valid output ports for task %s are: %s' % (port_name, self.type, output_port_names))
 
-        return "source:" + self.type + ":" + port_name
+        return "source:" + self.name + ":" + port_name
 
     # set input ports source or value
     def set( self, **kwargs ):
@@ -74,19 +74,16 @@ class Task:
     def generate_task_workflow_json(self):
         d = {
                     "name": self.name,
-                    "outputs": [
-                        {
-                            "name": "data"
-                        }
-                    ],
+                    "outputs": [],
                     "inputs": [],
                     "taskType": self.type,
                     "containerDescriptors": [{"properties": {"domain": self.domain}}]
                 }
 
         for input_port in self.input_data:
-            input_port_name = input_port.keys()[0]
-            input_port_value = input_port[input_port_name]
+            input_port_name = input_port['name']
+            input_port_value = input_port['value']
+
             if input_port_value == False:
                 input_port_value = 'false'
 
@@ -102,7 +99,11 @@ class Task:
                                     "value": input_port_value
                                 })
 
-        d['outputs'] = self.output_ports
+        for output_port in self.output_ports:
+            output_port_name = output_port['name']
+            d['outputs'].append(  {
+                    "name": output_port_name
+                } )
 
         return d
 
@@ -111,18 +112,20 @@ class Workflow:
     def __init__(self, interface, tasks, **kwargs):
         self.interface = interface
         self.name = kwargs.get('name', str(uuid.uuid4()) )
+        self.id = None
 
         self.definition = self.workflow_skeleton()
 
         for task in tasks:
             self.definition['tasks'].append( task.generate_task_workflow_json() )
 
-        
-
     def workflow_skeleton(self):
         return {
             "tasks": [],
             "name": self.name
         }
+
+    def execute(self):
+        self.id = self.interface.workflow.launch(self.definition)
 
 
