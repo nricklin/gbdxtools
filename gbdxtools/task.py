@@ -8,7 +8,7 @@ import json, uuid
 
 class Task:
 
-    def __init__(self, interface, task_name, **kwargs):
+    def __init__(self, interface, task_type, **kwargs):
         '''Construct an instance of GBDX Task
 
          Args:
@@ -23,12 +23,13 @@ class Task:
             
         '''
 
-        self.input_data = []
-        self.id = task_name + '_' + str(uuid.uuid4())
+        self.input_data = {}
+        self.name = task_type + '_' + str(uuid.uuid4())
+        self.id = None
 
         self.interface = interface
-        self.name = task_name
-        self.definition = self.interface.workflow.describe_task(task_name)
+        self.type = task_type
+        self.definition = self.interface.workflow.describe_task(task_type)
         self.domain = self.definition['containerDescriptors'][0]['properties'].get('domain','default')
 
         # all the other kwargs are input port values or sources
@@ -38,19 +39,19 @@ class Task:
     def get_output(self, port_name):
         output_port_names = [p['name'] for p in self.output_ports]
         if port_name not in output_port_names:
-            raise Exception('Invalid output port %s.  Valid output ports for task %s are: %s' % (port_name, self.name, output_port_names))
+            raise Exception('Invalid output port %s.  Valid output ports for task %s are: %s' % (port_name, self.type, output_port_names))
 
-        return "source:" + self.id + ":" + port_name
+        return "source:" + self.type + ":" + port_name
 
     # set input ports source or value
     def set( self, **kwargs ):
         input_port_names = [p['name'] for p in self.input_ports]
         for input_port in kwargs.keys():
             if input_port in input_port_names:
-                self.input_data.append({input_port: kwargs[input_port]})
+                self.input_data[input_port] = kwargs[input_port]
                 # set the value/source
             else:
-                raise Exception('Invalid input port %s.  Valid input ports for task %s are: %s' % (input_port, self.name, input_port_names))
+                raise Exception('Invalid input port %s.  Valid input ports for task %s are: %s' % (input_port, self.type, input_port_names))
 
     @property
     def input_ports(self):
@@ -68,98 +69,54 @@ class Task:
     def output_ports(self, value):
         raise NotImplementedError("Cannot set output ports")
 
-    @classmethod
-    def from_json(cls,task_desc):
-        '''Contstruct a new instance of task from the task descriptor
-
-        Args:
-            task_desc (string): JSON string task description.
-
-        Returns:
-            An instance of Task.
-
-        '''
-        """
-        {
-        "containerDescriptors": [{
-            "properties": {"domain": "raid"}}],
-        "name": "AOP",
-        "inputs": [{
-            "name": "data",
-            "value": "INPUT_BUCKET"
-        }, {
-            "name": "bands",
-            "value": "Auto"
-        },
-           {
-            "name": "enable_acomp",
-            "value": "false"
-        }, {
-            "name": "enable_dra",
-            "value": "false"
-        }, {
-            "name": "ortho_epsg",
-            "value": "EPSG:4326"
-        }, {
-            "name": "enable_pansharpen",
-            "value": "false"
-        }],
-        "outputs": [{
-            "name": "data"
-        }, {
-            "name": "log"
-        }],
-        "timeout": 36000,
-        "taskType": "AOP_Strip_Processor",
-        "containerDescriptors": [{"properties": {"domain": "raid"}}]
-        }
-        """
-        js_task = json.loads(task_desc)
-        
-        # validate the descriptor
-        if (
-                (js_task["name"] is None) or 
-                (js_task["properties"] is None) or 
-                (js_task["inputPortDescriptors"] is None) or 
-                (js_task["outputPortDescriptors"] is None) or 
-                (js_task["containerDescriptors"] is None)
-           ):
-            raise("Incomplete task descriptor")
-
-        t = Task(
-            name=js_task["name"],
-            properties=js_task["properties"],
-            input_port_descriptors=js_task["inputPortDescriptors"],
-            output_port_descriptors=js_task["outputPortDescriptors"],
-            container_descriptors=js_task["containerDescriptors"]
-        )
-
-        return t
-
-    def to_json(self):
+    def generate_task_workflow_json(self):
         d = {
-            "name": self.name,
-            "properties": self.properties,
-            "containerDescriptors": self.container_descriptors,
-            "inputPortDescriptors": self.input_port_descriptors,
-            "outputPortDescriptors": self.output_port_descriptors
-        }
+                    "name": self.name,
+                    "outputs": [
+                        {
+                            "name": "data"
+                        }
+                    ],
+                    "inputs": [],
+                    "taskType": self.type
+                }
+
+        for input_port_name, input_port_value in self.input_data.iteritems():
+            if input_port_value == False:
+                input_port_value = 'false'
+
+            if input_port_value.startswith('source:'):
+                # this port is linked from a previous output task
+                d['inputs'].append({
+                                    "name": input_port_name,
+                                    "source": input_port_value.replace('source:','')
+                                })
+            else:
+                d['inputs'].append({
+                                    "name": input_port_name,
+                                    "value": input_port_value
+                                })
+
+
         return json.dumps(d)
 
 
 class Workflow:
     def __init__(self, interface, tasks, **kwargs):
         self.interface = interface
+        self.name = kwargs.get('name', uuid.uuid4())
 
         self.definition = self.workflow_skeleton()
 
         for task in tasks:
-            print task.id
+            task.generate_task_workflow_json()
+
+        
 
     def workflow_skeleton(self):
         return {
             "tasks": [],
-            "name": "StageToS3",
+            "name": self.name
         }
 
 
