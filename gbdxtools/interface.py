@@ -16,7 +16,7 @@ from gbdxtools.ordering import Ordering
 from gbdxtools.workflow import Workflow
 from gbdxtools.catalog import Catalog
 from gbdxtools.idaho import Idaho
-
+import gbdxtools.task
 
 class Interface():
 
@@ -59,3 +59,9 @@ class Interface():
 
         # create and store an instance of the Idaho Client
         self.idaho = Idaho(self)
+
+    def Task(self, task_name, **kwargs):
+        return gbdxtools.task.Task(self, task_name, **kwargs)
+
+    def Workflow(self, tasks, **kwargs):
+        return gbdxtools.task.Workflow(self, tasks, **kwargs)
