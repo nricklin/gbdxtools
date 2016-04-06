@@ -127,5 +127,23 @@ class Workflow:
 
     def execute(self):
         self.id = self.interface.workflow.launch(self.definition)
+        return self.id
+
+    @property
+    def status(self):
+        return self.interface.workflow.status(self.id)
+
+    @status.setter
+    def status(self, value):
+        raise NotImplementedError("Cannot set workflow status, readonly.")
+
+    @property
+    def complete(self):
+        return self.status['state'] == 'complete'
+
+    @complete.setter
+    def complete(self, value):
+        print 'hi'
+        raise NotImplementedError("Cannot set workflow complete, readonly.")
 
 
