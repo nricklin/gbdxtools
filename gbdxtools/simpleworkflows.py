@@ -1,10 +1,16 @@
 '''
-Authors: Donnie Marino, Kostas Stamatiou
+Authors: Donnie Marino, Kostas Stamatiou, Nate Ricklin
 Contact: dmarino@digitalglobe.com
 
 Class to represent a workflow task
 '''
 import json, uuid
+
+class InvalidInputPort(Exception):
+    pass
+
+class InvalidOutputPort(Exception):
+    pass
 
 class Task:
 
@@ -39,7 +45,7 @@ class Task:
     def get_output(self, port_name):
         output_port_names = [p['name'] for p in self.output_ports]
         if port_name not in output_port_names:
-            raise Exception('Invalid output port %s.  Valid output ports for task %s are: %s' % (port_name, self.type, output_port_names))
+            raise InvalidOutputPort('Invalid output port %s.  Valid output ports for task %s are: %s' % (port_name, self.type, output_port_names))
 
         return "source:" + self.name + ":" + port_name
 
@@ -53,7 +59,7 @@ class Task:
                                             'value': kwargs[input_port]
                                         })
             else:
-                raise Exception('Invalid input port %s.  Valid input ports for task %s are: %s' % (input_port, self.type, input_port_names))
+                raise InvalidInputPort('Invalid input port %s.  Valid input ports for task %s are: %s' % (input_port, self.type, input_port_names))
 
     @property
     def input_ports(self):

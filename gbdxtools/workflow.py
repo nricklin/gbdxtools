@@ -89,6 +89,7 @@ class Workflow():
 
         url = 'https://geobigdata.io/workflows/v1/tasks/' + task_name
         r = self.gbdx_connection.get(url)
+        r.raise_for_status()
 
         return r.json()
 
