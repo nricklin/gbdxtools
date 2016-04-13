@@ -51,7 +51,7 @@ class Ordering:
         return order_id
 
     def status(self, order_id):
-        '''Checks imagery order status.  There can be more than one image per
+        '''Checks imagery order status. There can be more than one image per
            order and this function returns the status of all images
            within the order.
 
@@ -59,19 +59,13 @@ class Ordering:
                order_id (str): The ID of the order placed.
 
            Returns:
-               dict (str) with keys = locations of ordered images and
-               values = status of each ordered image.
+               List of dictionaries, one per image. Each dictionary consists 
+               of the keys 'acquisition_id', 'location' and 'state'.
         '''
 
         self.logger.debug('Get status of order ' + order_id)
         url = 'https://geobigdata.io/orders/v2/order/'
         r = self.gbdx_connection.get(url + order_id)
         r.raise_for_status()
-        lines = r.json().get("acquisitions", {})
-        results = []
-        for line in lines:
-            location = line['location']
-            status = line["state"]
-            results.append((location, status))
-
-        return dict(results)
+        return r.json().get("acquisitions", {})
+        

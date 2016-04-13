@@ -12,7 +12,7 @@ if sys.version_info > (3,):
       
 setup(name='gbdxtools',
       version='0.1.6',
-      description='Ongoing work on refactoring the repo to separate ordering, workflows, s3, idaho.',
+      description='Refactored to separate ordering, workflows, s3, idaho. New idaho functionality added.',
       classifiers=[],
       keywords='',
       author='Kostas Stamatiou',
@@ -26,7 +26,8 @@ setup(name='gbdxtools',
                         'boto==2.39.0',
                         'gbdx-auth==0.1.2',
                         'Pillow==3.1.1',
-                        'pygeoif==0.6'],
+                        'pygeoif==0.6',
+                        'sympy==1.0'],
       setup_requires=['pytest-runner'],
       tests_require=['pytest','vcrpy']
       )
